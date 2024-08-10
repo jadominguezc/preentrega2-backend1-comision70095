@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Products</title>
+  <style>
+    body { background-color: #000259; color: white; }
+    h1 { font-weight: bold; }
+    .product { border: 1px solid white; margin: 10px; padding: 10px; width: 300px;  display: inline-block; text-align: center;}
+    form { margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <h1>Crear Productos</h1>
+  <form id="productForm">
+    <label for="code">Código:</label>
+    <input type="text" id="code" name="code" required><br><br>
+    <label for="title">Título:</label>
+    <input type="text" id="title" name="title" required><br><br>
+    <label for="description">Descripción:</label>
+    <input type="text" id="description" name="description" required><br><br>
+    <label for="price">Precio:</label>
+    <input type="number" id="price" name="price" required><br><br>
+    <label for="stock">Stock:</label>
+    <input type="number" id="stock" name="stock" required><br><br>
+    <label for="category">Categoría:</label>
+    <input type="text" id="category" name="category" required><br><br>
+    <button type="submit">Crear</button><br><br>
+  </form>
+  
+  <h1>Productos en Tiempo Real</h1>
+  <div id="productsContainer">
+    {{#each products}}
+      <div class="product">
+        <h2>{{this.title}}</h2>
+        <p>Categoría: {{this.category}}</p>
+        <p>Descripción: {{this.description}}</p>
+        <p>Precio: ${{this.price}}</p>
+        <p>Stock: {{this.stock}}</p>
+        <button class="delete" data-id="{{this.id}}">Eliminar</button><br><br>
+      </div>
+    {{/each}}
+  </div>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    document.getElementById('productForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const product = {};
+      formData.forEach((value, key) => {
+        product[key] = value;
+      });
+      socket.emit('addProduct', product);
+
+      document.getElementById('productForm').reset();
+    });
+
+    document.getElementById('productsContainer').addEventListener('click', function(e) {
+      if (e.target.classList.contains('delete')) {
+        const productId = e.target.getAttribute('data-id');
+        socket.emit('deleteProduct', productId);
+      }
+    });
+
+    socket.on('updateProducts', function(products) {
+      const container = document.getElementById('productsContainer');
+      container.innerHTML = '';
+      products.forEach(product => {
+        const productDiv = document.createElement('div');
+        productDiv.classList.add('product');
+        productDiv.innerHTML = `
+          <h2>${product.title}</h2>
+          <p>Categoría: ${product.category}</p>
+          <p>Descripción: ${product.description}</p>
+          <p>Precio: $${product.price}</p>
+          <p>Stock: ${product.stock}</p>
+          <button class="delete" data-id="${product.id}">Eliminar</button>
+        `;
+        container.appendChild(productDiv);
+      });
+    });
+  </script>
+</body>
+</html>
